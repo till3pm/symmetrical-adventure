@@ -1,0 +1,54 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.mcphone.server'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.mcphone.server'
+        minSdk 26
+        // Bewusst 28: Ab targetSdk 29 darf Android keine Programme (java) aus dem
+        // App-Speicher mehr ausfuehren. Fuer Sideloading ist 28 weiterhin installierbar.
+        targetSdk 28
+        versionCode 1
+        versionName '1.0'
+        ndk { abiFilters 'arm64-v8a' }
+        externalNativeBuild { ndkBuild { arguments 'APP_PLATFORM=android-26' } }
+    }
+
+    def ndkHome = System.getenv('ANDROID_NDK_LATEST_HOME') ?: System.getenv('ANDROID_NDK_HOME')
+    if (ndkHome) {
+        ndkPath ndkHome
+        // ndkVersion muss zur Version in ndkPath passen (sonst CXX1100)
+        def props = new File(ndkHome, 'source.properties')
+        if (props.exists()) {
+            def m = props.text =~ /Pkg\.Revision\s*=\s*(\S+)/
+            if (m.find()) ndkVersion m.group(1)
+        }
+    }
+    externalNativeBuild { ndkBuild { path 'src/main/jni/Android.mk' } }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+
+    packaging {
+        jniLibs { useLegacyPackaging true }
+        resources {
+            excludes += ['META-INF/DEPENDENCIES', 'META-INF/LICENSE*', 'META-INF/NOTICE*', 'META-INF/versions/**', 'META-INF/*.kotlin_module']
+        }
+    }
+}
+
+dependencies {
+    implementation 'org.apache.commons:commons-compress:1.26.2'
+    implementation 'org.tukaani:xz:1.9'
+}
